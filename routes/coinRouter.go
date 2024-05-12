@@ -3,13 +3,12 @@ package routes
 import (
 	"coffeshop/controllers"
 	"coffeshop/database"
-	"coffeshop/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
 func CoinRoutes(r *gin.Engine) {
-	r.Use(middlewares.AuthenticateUser())
+	// r.Use(middlewares.AuthenticateUser())
 	r.GET("/coin/:userId", controllers.GetMyCoin())
 	r.GET("/coin", controllers.GetAllCoins())
 	r.POST("/coin/track-coin", controllers.TrackCoin())
