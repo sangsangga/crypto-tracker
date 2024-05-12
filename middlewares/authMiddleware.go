@@ -19,7 +19,7 @@ func AuthenticateUser() gin.HandlerFunc {
 			return
 		}
 
-		_, err := helpers.ValidateToken(clientToken)
+		claims, err := helpers.ValidateToken(clientToken)
 
 		if err != nil {
 			ctx.JSON(http.StatusForbidden, gin.H{
@@ -28,6 +28,7 @@ func AuthenticateUser() gin.HandlerFunc {
 			ctx.Abort()
 			return
 		}
+		ctx.Set("userId", claims.UserId)
 		ctx.Next()
 
 	}

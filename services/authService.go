@@ -30,34 +30,48 @@ func validatePassword(userPassword string, inputPassword string) bool {
 	return err == nil
 }
 
-func Register(ctx *gin.Context) (models.User, error) {
-	var user models.User
-	if err := ctx.BindJSON(&user); err != nil {
-		return user, err
+func isEligiblePassword(password string, passwordConfirmation string) (bool, error) {
+	if password != passwordConfirmation {
+		return false, errors.New("passwordConfirmation not match")
 	}
 
-	retrievedUser, err := userRepository.FindUserByEmail(user.Email)
+	return true, nil
+}
+
+func Register(ctx *gin.Context) (models.User, error) {
+	var request userRepository.UserRegistrationRequestDTO
+	if err := ctx.BindJSON(&request); err != nil {
+		return models.User{}, err
+	}
+
+	retrievedUser, err := userRepository.FindUserByEmail(request.Email)
 
 	if err != nil {
-		return user, err
+		return models.User{}, err
 	}
 
 	if retrievedUser != (models.User{}) {
 		return retrievedUser, errors.New("please use other credential")
 	}
 
-	hiddenPassword, err := hidePassword(user.Password)
+	_, err = isEligiblePassword(request.Password, request.PasswordConfirmation)
 
 	if err != nil {
-		return user, err
+		return models.User{}, err
 	}
 
-	user.Password = hiddenPassword
-
-	result, err := userRepository.InsertUser(user)
+	hiddenPassword, err := hidePassword(request.Password)
 
 	if err != nil {
-		return user, err
+		return models.User{}, err
+	}
+
+	request.Password = hiddenPassword
+
+	result, err := userRepository.InsertUser(request)
+
+	if err != nil {
+		return models.User{}, err
 	}
 
 	return result, nil
@@ -85,7 +99,7 @@ func Login(ctx *gin.Context) (string, error) {
 		return "", errors.New("invalid credential")
 	}
 
-	token, _ := helpers.GenerateAllTokens(retrievedUser.Email)
+	token, _ := helpers.GenerateAllTokens(retrievedUser.Email, retrievedUser.Id)
 
 	return token, nil
 }

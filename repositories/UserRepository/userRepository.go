@@ -6,6 +6,12 @@ import (
 	"database/sql"
 )
 
+type UserRegistrationRequestDTO struct {
+	Email                string
+	Password             string
+	PasswordConfirmation string
+}
+
 func FindUserByEmail(email string) (models.User, error) {
 	var retrievedUser models.User
 	var err error
@@ -20,30 +26,43 @@ func FindUserByEmail(email string) (models.User, error) {
 
 }
 
-func InsertUser(userInput models.User) (models.User, error) {
+func InsertUser(request UserRegistrationRequestDTO) (models.User, error) {
 
 	var err error
 	db := database.Client
 	tx, err := db.Begin()
 	if err != nil {
-		return userInput, err
+		return models.User{}, err
 	}
 
 	defer tx.Rollback()
 	stmt, err := tx.Prepare("INSERT INTO users (id, email, password) VALUES (?, ?, ?)")
-	stmt.Exec(nil, userInput.Email, userInput.Password)
 
 	if err != nil {
-		return userInput, err
+		return models.User{}, err
+	}
+
+	res, err := stmt.Exec(nil, request.Email, request.Password)
+
+	if err != nil {
+		return models.User{}, err
 	}
 
 	err = tx.Commit()
 
 	if err != nil {
-		return userInput, err
+		return models.User{}, err
 	}
 
 	defer stmt.Close()
 
-	return userInput, nil
+	stmt.QueryRow().Scan()
+
+	id, err := res.LastInsertId()
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return models.User{Id: id}, nil
 }

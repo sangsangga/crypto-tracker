@@ -3,6 +3,7 @@ package coinService
 import (
 	"coffeshop/models"
 	coinRepository "coffeshop/repositories/CoinRepository"
+	"database/sql"
 	"errors"
 	"strconv"
 	"sync"
@@ -18,14 +19,12 @@ type CoinDTO struct {
 }
 
 type TrackCoinRequestDTO struct {
-	UserId int
 	CoinId string
 }
 
 func GetAllCoins() ([]CoinDTO, error) {
 
 	allCoins, err := coinRepository.GetAllCoins()
-	var rupiahRate float64
 
 	if err != nil {
 		return []CoinDTO{}, err
@@ -37,12 +36,7 @@ func GetAllCoins() ([]CoinDTO, error) {
 		return []CoinDTO{}, err
 	}
 
-	for _, v := range coinRates.Data {
-		if v.ID == "indonesian-rupiah" {
-			rupiahRate, _ = strconv.ParseFloat(v.RateUsd, 64)
-			break
-		}
-	}
+	rupiahRate := getRupiahRate(coinRates)
 
 	var listCoin []CoinDTO
 
@@ -66,9 +60,11 @@ func TrackCoin(ctx *gin.Context) (models.UserCoin, error) {
 		return models.UserCoin{}, errors.New("error mapping json")
 	}
 
-	retrievedUserCoin, err := coinRepository.GetTrackedCoinByUserIdAndCoinId(trackCointRequest.UserId, trackCointRequest.CoinId)
+	userId, _ := ctx.Get("userId")
 
-	if err != nil {
+	retrievedUserCoin, err := coinRepository.GetTrackedCoinByUserIdAndCoinId(userId.(int), trackCointRequest.CoinId)
+
+	if err != nil && err != sql.ErrNoRows {
 		return models.UserCoin{}, err
 	}
 
@@ -86,7 +82,7 @@ func TrackCoin(ctx *gin.Context) (models.UserCoin, error) {
 		return models.UserCoin{}, errors.New("coin not exists")
 	}
 
-	userCoin, err := coinRepository.AddTrackedCoin(trackCointRequest.UserId, trackCointRequest.CoinId)
+	userCoin, err := coinRepository.AddTrackedCoin(userId.(int), trackCointRequest.CoinId)
 	if err != nil {
 		return models.UserCoin{}, err
 	}
@@ -101,7 +97,9 @@ func UntrackCoin(ctx *gin.Context) (bool, error) {
 		return false, errors.New("error bind trackcoin request")
 	}
 
-	if err := coinRepository.DeleteUserCoin(trackCointRequest.UserId, trackCointRequest.CoinId); err != nil {
+	userId, _ := ctx.Get("userId")
+
+	if err := coinRepository.DeleteUserCoin(userId.(int), trackCointRequest.CoinId); err != nil {
 		return false, err
 	}
 
@@ -112,7 +110,6 @@ func UntrackCoin(ctx *gin.Context) (bool, error) {
 func GetTrackedCoins(ctx *gin.Context) ([]CoinDTO, error) {
 
 	userId, err := strconv.Atoi(ctx.Params.ByName("userId"))
-	var rupiahRate float64
 
 	if err != nil {
 		return []CoinDTO{}, errors.New("error parse user id")
@@ -130,12 +127,7 @@ func GetTrackedCoins(ctx *gin.Context) ([]CoinDTO, error) {
 		return []CoinDTO{}, err
 	}
 
-	for _, v := range rates.Data {
-		if v.ID == "indonesian-rupiah" {
-			rupiahRate, _ = strconv.ParseFloat(v.RateUsd, 64)
-			break
-		}
-	}
+	rupiahRate := getRupiahRate(rates)
 
 	var userCoins []CoinDTO
 
@@ -166,4 +158,16 @@ func GetTrackedCoins(ctx *gin.Context) ([]CoinDTO, error) {
 
 	return userCoins, nil
 
+}
+
+func getRupiahRate(coinRates coinRepository.RatesResponse) float64 {
+	var rupiahRate float64
+	for _, v := range coinRates.Data {
+		if v.ID == "indonesian-rupiah" {
+			rupiahRate, _ = strconv.ParseFloat(v.RateUsd, 64)
+			break
+		}
+	}
+
+	return rupiahRate
 }

@@ -3,6 +3,8 @@ package main
 import (
 	"coffeshop/database"
 	"coffeshop/routes"
+	"fmt"
+	"os"
 )
 
 func main() {
@@ -10,9 +12,11 @@ func main() {
 
 	r := routes.SetupRouter()
 
-	// r.GET("/ping", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{"message": "pong"})
-	// })
+	port := os.Getenv("PORT")
+	if port == "" {
+		fmt.Println(">------")
+		port = "8080"
+	}
 
-	r.Run()
+	r.Run(":" + port)
 }

@@ -120,7 +120,7 @@ func GetTrackedCoinByUserIdAndCoinId(userId int, coinId string) (models.UserCoin
 
 	var retrievedUserCoin models.UserCoin
 	if err := row.Scan(&retrievedUserCoin.UserId, &retrievedUserCoin.CoinId); err != nil {
-		return retrievedUserCoin, errors.New("error retrieve user coin")
+		return retrievedUserCoin, err
 	}
 
 	return retrievedUserCoin, nil

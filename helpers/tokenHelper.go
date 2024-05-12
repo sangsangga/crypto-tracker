@@ -1,32 +1,38 @@
 package helpers
 
 import (
-	"log"
+	"os"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
 type JWTDetails struct {
-	Email string
+	Email  string
+	UserId int64
 	jwt.StandardClaims
 }
 
 func GenerateAllTokens(
-	email string,
+	email string, userId int64,
 ) (signedToken string, err error) {
 	claims := &JWTDetails{
-		Email: email,
+		Email:  email,
+		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(12)).Unix(),
 		},
 	}
 
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("secret"))
+	secret := os.Getenv("SECRET_KEY")
+	if secret == "" {
+		secret = "secret"
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 
 	if err != nil {
-		log.Panic(err)
-		return
+		return "", err
 	}
 
 	return token, err
@@ -36,7 +42,11 @@ func GenerateAllTokens(
 func ValidateToken(signedToken string) (claims *JWTDetails, msg error) {
 	token, err := jwt.ParseWithClaims(signedToken, &JWTDetails{},
 		func(t *jwt.Token) (interface{}, error) {
-			return []byte("secret"), nil
+			secret := os.Getenv("SECRET_KEY")
+			if secret == "" {
+				secret = "secret"
+			}
+			return []byte(secret), nil
 		})
 
 	if err != nil {
