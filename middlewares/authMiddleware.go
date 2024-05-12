@@ -16,6 +16,7 @@ func AuthenticateUser() gin.HandlerFunc {
 				"message": "Not Authorized",
 			})
 			ctx.Abort()
+			return
 		}
 
 		_, err := helpers.ValidateToken(clientToken)
@@ -25,6 +26,7 @@ func AuthenticateUser() gin.HandlerFunc {
 				"message": "Not Authorized",
 			})
 			ctx.Abort()
+			return
 		}
 		ctx.Next()
 
