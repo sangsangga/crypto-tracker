@@ -16,20 +16,16 @@ func AuthenticateUser() gin.HandlerFunc {
 				"message": "Not Authorized",
 			})
 			ctx.Abort()
-			return
 		}
 
-		claims, err := helpers.ValidateToken(clientToken)
+		_, err := helpers.ValidateToken(clientToken)
 
 		if err != nil {
 			ctx.JSON(http.StatusForbidden, gin.H{
 				"message": "Not Authorized",
 			})
 			ctx.Abort()
-			return
 		}
-
-		ctx.Set("email", claims.Email)
 		ctx.Next()
 
 	}

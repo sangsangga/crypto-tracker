@@ -12,3 +12,6 @@ FROM debian:bookworm
 
 COPY --from=builder /run-app /usr/local/bin/
 CMD ["run-app"]
+
+RUN apt-get update
+RUN apt-get install -y ca-certificates

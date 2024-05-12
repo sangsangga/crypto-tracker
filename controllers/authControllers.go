@@ -31,7 +31,8 @@ func Register() gin.HandlerFunc {
 		user, err := authServices.Register(ctx)
 
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error() + "1"})
+			ctx.Abort()
 			return
 		}
 
@@ -48,8 +49,10 @@ func Login() gin.HandlerFunc {
 
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": err,
+				"message": err.Error() + "2",
 			})
+			ctx.Abort()
+			return
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
