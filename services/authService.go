@@ -7,7 +7,9 @@ import (
 	userRepository "coffeshop/repositories/UserRepository"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"net/mail"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -30,6 +32,12 @@ func validatePassword(userPassword string, inputPassword string) bool {
 	return err == nil
 }
 
+func isEmailValid(email string) bool {
+	_, err := mail.ParseAddress(email)
+
+	return err == nil
+}
+
 func isEligiblePassword(password string, passwordConfirmation string) (bool, error) {
 	if password != passwordConfirmation {
 		return false, errors.New("passwordConfirmation not match")
@@ -42,6 +50,10 @@ func Register(ctx *gin.Context) (models.User, error) {
 	var request userRepository.UserRegistrationRequestDTO
 	if err := ctx.BindJSON(&request); err != nil {
 		return models.User{}, err
+	}
+
+	if !isEmailValid(request.Email) {
+		return models.User{}, errors.New("email invalid")
 	}
 
 	retrievedUser, err := userRepository.FindUserByEmail(request.Email)
@@ -84,6 +96,11 @@ func Login(ctx *gin.Context) (string, error) {
 
 	if err = ctx.BindJSON(&user); err != nil {
 		return "", err
+	}
+
+	if !isEmailValid(user.Email) {
+		fmt.Println("error email")
+		return "", errors.New("email invalid")
 	}
 
 	retrievedUser := models.User{}
